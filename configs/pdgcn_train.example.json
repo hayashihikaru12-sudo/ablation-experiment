@@ -19,8 +19,8 @@
     "rollout_window": 20
   },
   "outputs": {
-    "checkpoint_path": "../runs/pdgcn/checkpoint.pt",
-    "history_path": "../runs/pdgcn/history.json"
+    "checkpoint_path": "../runs/ablation_fixed_gamma/checkpoint.pt",
+    "history_path": "../runs/ablation_fixed_gamma/history.json"
   },
   "datasets": [
     {

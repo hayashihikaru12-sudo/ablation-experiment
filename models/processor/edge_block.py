@@ -34,9 +34,9 @@ class EdgeBlock(nn.Module):
             layer_norm=False,
             dropout=config.dropout,
         )
-        # 可学习的迎风门控系数，初始化为配置中的 gamma_upwind 值。
-        # 设为 nn.Parameter 后梯度可直接优化，训练会自适应调整方向选择性强度。
-        self.gamma_upwind = nn.Parameter(torch.tensor(float(config.gamma_upwind)))
+        # 消融实验：固定迎风门控系数，不允许优化器更新 gamma_upwind。
+        # 使用 buffer 保证它随模型迁移设备并进入 checkpoint，同时不计入可训练参数。
+        self.register_buffer("gamma_upwind", torch.tensor(float(config.gamma_upwind)))
         self.last_alpha = None
         self.last_aniso_gate = None
         self.last_gamma = None
@@ -85,7 +85,7 @@ class EdgeBlock(nn.Module):
         返回:
             迎风权重张量，形状 ``[E, 1]``，数值为
             ``ReLU(1 + gamma_upwind * cos_theta)``，
-            其中 ``gamma_upwind`` 是可学习的 ``nn.Parameter``。
+            其中 ``gamma_upwind`` 在本消融分支中是固定 buffer。
         """
 
         cos_theta = raw_edge_attr[:, 4:5]
