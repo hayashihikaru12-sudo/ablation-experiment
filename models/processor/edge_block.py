@@ -83,15 +83,16 @@ class EdgeBlock(nn.Module):
                 ``cos_theta``。
 
         返回:
-            迎风权重张量，形状 ``[E, 1]``，数值为
-            ``ReLU(1 + gamma_upwind * cos_theta)``，
-            其中 ``gamma_upwind`` 是可学习的 ``nn.Parameter``。
+            迎风权重张量，形状 ``[E, 1]``。本消融分支关闭迎风门控时
+            恒为 1；否则为 ``ReLU(1 + gamma_upwind * cos_theta)``。
         """
 
         cos_theta = raw_edge_attr[:, 4:5]
         gamma = self.gamma_upwind
-        alpha = F.relu(1.0 + gamma * cos_theta)
         self.last_gamma = gamma.detach()
+        if not self.config.use_upwind_gate:
+            return torch.ones_like(cos_theta)
+        alpha = F.relu(1.0 + gamma * cos_theta)
         return alpha
 
     def _aniso_gate(self, raw_edge_attr, message):

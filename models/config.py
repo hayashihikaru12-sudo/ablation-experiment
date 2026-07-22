@@ -12,6 +12,8 @@ class PDGCNConfig:
     output_size: int = 1
 
     gamma_upwind: float = 0.8
+    # 消融分支默认关闭方向加权，使所有边的迎风门控恒为 1。
+    use_upwind_gate: bool = False
     use_aniso_gate: bool = True
     include_global: bool = True
     include_q_in_features: bool = False
@@ -101,6 +103,8 @@ class PDGCNConfig:
                 raise ValueError(f"{field_name} must be positive, got {value}.")
         if not 0.0 <= float(self.dropout) < 1.0:
             raise ValueError(f"dropout must be in [0, 1), got {self.dropout}.")
+        if not isinstance(self.use_upwind_gate, bool):
+            raise ValueError(f"use_upwind_gate must be a boolean, got {self.use_upwind_gate!r}.")
         if float(self.lambda_pde) < 0:
             raise ValueError(f"lambda_pde must be non-negative, got {self.lambda_pde}.")
         if float(self.lambda_outflow) < 0:
