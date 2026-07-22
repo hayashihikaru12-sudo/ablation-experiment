@@ -12,7 +12,8 @@ class PDGCNConfig:
     output_size: int = 1
 
     gamma_upwind: float = 0.8
-    use_aniso_gate: bool = True
+    # 消融分支默认关闭纤维各向异性门控；门控网络仍保留以维持参数预算。
+    use_aniso_gate: bool = False
     include_global: bool = True
     include_q_in_features: bool = False
     include_delta_t_source_in_features: bool = False
@@ -101,6 +102,8 @@ class PDGCNConfig:
                 raise ValueError(f"{field_name} must be positive, got {value}.")
         if not 0.0 <= float(self.dropout) < 1.0:
             raise ValueError(f"dropout must be in [0, 1), got {self.dropout}.")
+        if not isinstance(self.use_aniso_gate, bool):
+            raise ValueError(f"use_aniso_gate must be a boolean, got {self.use_aniso_gate!r}.")
         if float(self.lambda_pde) < 0:
             raise ValueError(f"lambda_pde must be non-negative, got {self.lambda_pde}.")
         if float(self.lambda_outflow) < 0:

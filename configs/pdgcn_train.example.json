@@ -19,8 +19,8 @@
     "rollout_window": 20
   },
   "outputs": {
-    "checkpoint_path": "../runs/pdgcn/checkpoint.pt",
-    "history_path": "../runs/pdgcn/history.json"
+    "checkpoint_path": "../runs/ablation_disable_fiber_anisotropy_gate/checkpoint.pt",
+    "history_path": "../runs/ablation_disable_fiber_anisotropy_gate/history.json"
   },
   "datasets": [
     {
@@ -48,6 +48,7 @@
       "include_q_in_features": true,
       "include_delta_t_source_in_features": true,
       "gamma_upwind": 0.8,
+      "use_aniso_gate": false,
       "dropout": 0.0,
       "layer_norm": true
     },
