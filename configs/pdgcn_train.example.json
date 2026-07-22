@@ -19,14 +19,14 @@
     "rollout_window": 20
   },
   "outputs": {
-    "checkpoint_path": "../runs/pdgcn/checkpoint.pt",
-    "history_path": "../runs/pdgcn/history.json"
+    "checkpoint_path": "../runs/ablation_cancel_explicit_heat_source/checkpoint.pt",
+    "history_path": "../runs/ablation_cancel_explicit_heat_source/history.json"
   },
   "datasets": [
     {
       "name": "casefinalend",
       "h5_dir": "../../autodl-tmp/casefinalend",
-      "cache_dir": "../runs/pdgcn/cache/casefinalend",
+      "cache_dir": "../runs/ablation_cancel_explicit_heat_source/cache/casefinalend",
       "scale": {
         "L0": 0.05335247993469239,
         "v0": 0.06,
@@ -47,6 +47,7 @@
       "message_passing_num": 4,
       "include_q_in_features": true,
       "include_delta_t_source_in_features": true,
+      "use_explicit_heat_source": false,
       "gamma_upwind": 0.8,
       "dropout": 0.0,
       "layer_norm": true

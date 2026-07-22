@@ -16,6 +16,7 @@ class PDGCNConfig:
     include_global: bool = True
     include_q_in_features: bool = False
     include_delta_t_source_in_features: bool = False
+    use_explicit_heat_source: bool = True
 
     dropout: float = 0.0
     layer_norm: bool = True
@@ -101,6 +102,11 @@ class PDGCNConfig:
                 raise ValueError(f"{field_name} must be positive, got {value}.")
         if not 0.0 <= float(self.dropout) < 1.0:
             raise ValueError(f"dropout must be in [0, 1), got {self.dropout}.")
+        if not isinstance(self.use_explicit_heat_source, bool):
+            raise ValueError(
+                "use_explicit_heat_source must be a boolean, "
+                f"got {self.use_explicit_heat_source!r}."
+            )
         if float(self.lambda_pde) < 0:
             raise ValueError(f"lambda_pde must be non-negative, got {self.lambda_pde}.")
         if float(self.lambda_outflow) < 0:

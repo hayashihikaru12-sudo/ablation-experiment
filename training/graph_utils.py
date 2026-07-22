@@ -100,6 +100,9 @@ def graph_surface_heat_source(graph):
 def graph_explicit_source_delta(graph, model_config):
     """计算当前图的显式表面热源温升 ``delta_T_Q*``。"""
 
+    if not bool(getattr(model_config, "use_explicit_heat_source", True)):
+        return torch.zeros_like(graph_temperature(graph))
+
     source_coefficient = getattr(
         model_config,
         "source_coefficient",

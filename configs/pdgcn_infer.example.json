@@ -3,11 +3,11 @@
   "inference": {
     "num_layers": 10,
     "layer_spacing": 0.00015,
-    "output_path": "../runs/pdgcn/multilayer_prediction.h5",
+    "output_path": "../runs/ablation_cancel_explicit_heat_source/multilayer_prediction.h5",
     "dataset_index": 0,
     "h5_path": null,
     "h5_dir": "../multilayer_hdf5",
-    "output_dir": "../runs/pdgcn/multilayer_batch",
+    "output_dir": "../runs/ablation_cancel_explicit_heat_source/multilayer_batch",
     "output_prefix": "pre_",
     "prediction_group_path": "prediction/pdgcn_multilayer",
     "batch_mode": true,
