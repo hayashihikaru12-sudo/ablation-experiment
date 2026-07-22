@@ -12,6 +12,7 @@ def compute_pde_residual(
     edge_attr,
     *,
     Q_star=None,
+    delta_t_source_star=None,
     inverse_pe: float = 1.0,
     pi_q: float = 1.0,
     k_ratio: float = 0.05,
@@ -34,7 +35,9 @@ def compute_pde_residual(
             或 ``[K, N, 1]``。
         T_current: 当前无量纲温度，形状同 ``T_next``，也可用单步温度广播到窗口。
         v_scan_star: 无量纲扫描速度，标量张量、Python 标量或长度为 ``K`` 的张量。
-        Q_star: 兼容旧调用的保留参数；无源残差中不再使用热源项。
+        Q_star: 兼容旧调用的保留参数；不直接使用。
+        delta_t_source_star: 可选的当前步无量纲热源温升，形状同温度或可广播。
+            仅在取消显式热源推进、由网络预测完整温度增量时传入。
         dt_star: 无量纲时间步长，标量。
         edge_index: 图边索引，形状 ``[2, E]``。
         edge_attr: 原始边特征，形状 ``[E, >=7]``。
@@ -54,11 +57,21 @@ def compute_pde_residual(
     T_next_2d, layout = _as_time_node(T_next, name="T_next")
     T_current_2d, _ = _as_time_node(T_current, name="T_current")
     T_current_2d = _broadcast_to_match(T_current_2d, T_next_2d, name="T_current")
+    if delta_t_source_star is None:
+        delta_t_source_2d = torch.zeros_like(T_current_2d)
+    else:
+        delta_t_source_2d, _ = _as_time_node(delta_t_source_star, name="delta_t_source_star")
+        delta_t_source_2d = _broadcast_to_match(
+            delta_t_source_2d,
+            T_next_2d,
+            name="delta_t_source_star",
+        )
     _validate_graph(edge_index, edge_attr, T_next_2d.shape[1])
 
     device = T_next_2d.device
     dtype = T_next_2d.dtype
     T_current_2d = T_current_2d.to(device=device, dtype=dtype)
+    delta_t_source_2d = delta_t_source_2d.to(device=device, dtype=dtype)
     edge_index = edge_index.to(device=device)
     edge_attr = edge_attr.to(device=device, dtype=dtype)
     T_eval_2d = _select_residual_temperature(
@@ -93,7 +106,11 @@ def compute_pde_residual(
     diffusion = torch.zeros_like(T_next_2d)
     diffusion.index_add_(1, receiver, diffusion_edge)
 
-    transient = (T_next_2d - T_current_2d) / _as_scalar_tensor(dt_star, device=device, dtype=dtype).clamp_min(eps)
+    transient = (T_next_2d - T_current_2d - delta_t_source_2d) / _as_scalar_tensor(
+        dt_star,
+        device=device,
+        dtype=dtype,
+    ).clamp_min(eps)
     residual = transient + convection - float(inverse_pe) * diffusion
     return _restore_layout(residual, layout)
 

@@ -1,5 +1,6 @@
 import argparse
 import json
+import random
 import sys
 from dataclasses import asdict
 from pathlib import Path
@@ -40,6 +41,7 @@ def run_training_from_config(config_path):
 
     config_path = Path(config_path)
     run_config = load_run_config(config_path)
+    _set_random_seed(run_config.training.seed)
     if len(run_config.datasets) > 1:
         raise NotImplementedError(
             "The classified config schema can list multiple datasets, but "
@@ -210,6 +212,20 @@ def run_training_from_config(config_path):
         "scale_params": scale_params,
         "resume": resume_info,
     }
+
+
+def _set_random_seed(seed: int):
+    """设置训练使用的 Python、NumPy 与 PyTorch 随机种子。"""
+
+    seed = int(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 
 def _save_training_artifacts(

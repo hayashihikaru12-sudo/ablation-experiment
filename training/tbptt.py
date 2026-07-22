@@ -8,6 +8,8 @@ from .graph_utils import (
     clone_graph_with_temperature,
     graph_boundary_nodes,
     graph_explicit_source_delta,
+    graph_physical_source_delta,
+    graph_residual_source_delta,
     graph_surface_heat_source,
     graph_temperature,
 )
@@ -54,13 +56,18 @@ def rollout_window(model, window: Sequence, initial_temperature_star, *, return_
     source_temperatures = []
     current_temperature = initial_temperature_star
     for graph in window:
+        physical_source_delta = graph_physical_source_delta(graph, model.config)
         delta_t_source = graph_explicit_source_delta(graph, model.config)
         source_temperature = apply_dirichlet_boundary(
             current_temperature + delta_t_source,
             graph_boundary_nodes(graph),
             value=getattr(model.config, "dirichlet_temperature_star", 0.0),
         )
-        graph_step = clone_graph_with_temperature(graph, source_temperature, delta_t_source_star=delta_t_source)
+        graph_step = clone_graph_with_temperature(
+            graph,
+            source_temperature,
+            delta_t_source_star=physical_source_delta,
+        )
         delta_temperature = model(graph_step)
         next_temperature = source_temperature + delta_temperature
         next_temperature = apply_dirichlet_boundary(
@@ -107,6 +114,7 @@ def train_tbptt_window(model, window: Sequence, initial_temperature_star, *, epo
             T_current=source_temperature,
             v_scan_star=graph.global_attr,
             q_surface_star=graph_surface_heat_source(graph),
+            delta_t_source_star=graph_residual_source_delta(graph, model.config),
             dt_star=model.config.dt_star,
             edge_index=graph.edge_index,
             edge_attr=graph.edge_attr,

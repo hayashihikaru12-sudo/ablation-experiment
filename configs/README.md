@@ -234,6 +234,7 @@ source_coefficient = Q0 * L0 / (rho * Cp * v0 * heat_source_effective_thickness 
 | `gamma_upwind` | number | 上风项权重相关参数，用于加强流向方向上的信息传播偏置。 |
 | `include_q_in_features` | boolean | 是否把无量纲表面热流 `q*` 追加到节点特征，默认 `false`。 |
 | `include_delta_t_source_in_features` | boolean | 是否把当前步显式源温升 `ΔT_Q*` 追加到节点特征，默认 `false`。 |
+| `use_explicit_heat_source` | boolean | 是否在 PD-GCN 前把 `ΔT_Q*` 显式叠加到温度状态，默认 `true`。设为 `false` 时保留热源特征并在 PDE residual 中扣除源增量，使网络学习完整 `ΔT*`。 |
 | `dropout` | number | MLP dropout 比例。当前示例为 `0.0`，表示不使用 dropout。 |
 | `layer_norm` | boolean | 是否在 MLP 中使用 LayerNorm。通常有助于稳定训练。 |
 
@@ -345,7 +346,7 @@ w = W_high if T_source_applied* > threshold else 1
 
 三类动态权重为互斥方案，不叠乘。权重计算结果会 `detach()`，只改变 residual MSE 的统计权重。
 
-训练时间推进采用算子分裂：先用显式表面热源得到 `T_source_applied*`，再把该温度输入无源 PD-GCN。若启用 `include_delta_t_source_in_features`，同一步的 `ΔT_Q*` 会写入节点特征；若启用 `include_q_in_features`，节点特征中也包含 `q*`。PDE residual 的瞬态项只约束 PD-GCN 负责的无源面内输运增量。当 `residual_time_scheme = "explicit"` 时，`convection` 和 `diffusion` 使用 `T_source_applied*` 评估；当为 `"backward"` 时使用 `T_next*` 评估。
+默认训练采用算子分裂：先用显式表面热源得到 `T_source_applied*`，再把该温度输入无源 PD-GCN。若 `use_explicit_heat_source=false`，则 `T_source_applied*=T_current*`，模型直接预测包含热源与输运贡献的完整增量；此时 residual 瞬态项为 `(T_next* - T_current* - ΔT_Q*) / dt*`。无论是否显式推进，`q*` 和物理 `ΔT_Q*` 特征的数值保持一致。当 `residual_time_scheme = "explicit"` 时，空间项使用模型输入温度评估；当为 `"backward"` 时使用 `T_next*` 评估。
 
 ## `hyperparameters.training`
 
@@ -367,7 +368,8 @@ w = W_high if T_source_applied* > threshold else 1
   "resume_checkpoint_path": null,
   "resume_optimizer_state": true,
   "loss_threshold": 0.02,
-  "device": null
+  "device": null,
+  "seed": 42
 }
 ```
 
@@ -388,6 +390,7 @@ w = W_high if T_source_applied* > threshold else 1
 | `resume_optimizer_state` | boolean | 是否同时恢复 Adam 优化器状态。恢复后仍会把优化器学习率重设为当前配置中的 `lr`，便于分阶段调小学习率。 |
 | `loss_threshold` | number 或 `null` | 提前停止阈值。epoch 平均 loss 低于该值时停止训练；为 `null` 时禁用该规则。 |
 | `device` | string 或 `null` | 训练设备。为 `null` 时自动选择 CUDA，若 CUDA 不可用则使用 CPU。也可显式写 `"cpu"` 或 `"cuda"`。 |
+| `seed` | integer | Python、NumPy 和 PyTorch 共用的非负随机种子，默认 `42`。A0/A1 对比必须使用相同值。 |
 
 训练语义：
 

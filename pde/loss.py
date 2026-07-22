@@ -116,6 +116,7 @@ def total_loss(
     v_scan_star,
     Q_star=None,
     q_surface_star=None,
+    delta_t_source_star=None,
     dt_star,
     edge_index,
     edge_attr,
@@ -153,7 +154,9 @@ def total_loss(
             ``[K, N]`` 或 ``[K, N, 1]``。
         T_current: 当前无量纲温度，形状同 ``T_next`` 或可广播到 ``T_next``。
         v_scan_star: 无量纲扫描速度，标量或长度为 ``K`` 的张量。
-        Q_star: 兼容旧调用的保留参数；无源残差中不再使用。
+        Q_star: 兼容旧调用的保留参数；不直接使用。
+        delta_t_source_star: 可选的当前步无量纲热源温升。取消显式热源推进时，
+            用它约束网络输出的完整温度增量；显式推进模式保持为 ``None`` 或零。
         dt_star: 无量纲时间步长。
         edge_index: 图边索引，形状 ``[2, E]``。
         edge_attr: 原始边特征，形状 ``[E, >=7]``。
@@ -191,6 +194,7 @@ def total_loss(
         edge_index=edge_index,
         edge_attr=edge_attr,
         Q_star=Q_star,
+        delta_t_source_star=delta_t_source_star,
         inverse_pe=inverse_pe,
         pi_q=pi_q,
         k_ratio=k_ratio,

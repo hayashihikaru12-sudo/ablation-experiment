@@ -97,11 +97,12 @@ def graph_surface_heat_source(graph):
     return torch.zeros_like(graph_temperature(graph))
 
 
-def graph_explicit_source_delta(graph, model_config):
-    """计算当前图的显式表面热源温升 ``delta_T_Q*``。"""
+def graph_physical_source_delta(graph, model_config):
+    """计算当前图由表面热流对应的物理热源温升 ``delta_T_Q*``。
 
-    if not bool(getattr(model_config, "use_explicit_heat_source", True)):
-        return torch.zeros_like(graph_temperature(graph))
+    该值独立于是否执行显式状态推进：取消显式推进时，它仍用于节点输入
+    特征和带源 PDE residual，使 PD-GCN 能够学习完整温度增量。
+    """
 
     source_coefficient = getattr(
         model_config,
@@ -114,6 +115,26 @@ def graph_explicit_source_delta(graph, model_config):
         source_coefficient=source_coefficient,
         absorptivity=getattr(model_config, "heat_source_absorptivity", 1.0),
     ).to(device=graph.x.device, dtype=graph.x.dtype)
+
+
+def graph_explicit_source_delta(graph, model_config):
+    """返回要显式叠加到当前温度的表面热源温升。"""
+
+    if not bool(getattr(model_config, "use_explicit_heat_source", True)):
+        return torch.zeros_like(graph_temperature(graph))
+    return graph_physical_source_delta(graph, model_config)
+
+
+def graph_residual_source_delta(graph, model_config):
+    """返回应由 PD-GCN 完整增量承担的热源温升。
+
+    显式推进开启时，源温升已经进入 residual 的 ``T_current``，因此返回零；
+    显式推进关闭时返回物理源温升，由 residual 的瞬态项扣除。
+    """
+
+    if bool(getattr(model_config, "use_explicit_heat_source", True)):
+        return torch.zeros_like(graph_temperature(graph))
+    return graph_physical_source_delta(graph, model_config)
 
 
 def _feature_index(graph, attr_name: str) -> int:

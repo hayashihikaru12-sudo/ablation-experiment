@@ -15,6 +15,8 @@ from .config import TrainConfig
 from .graph_utils import (
     clone_graph_with_temperature,
     graph_explicit_source_delta,
+    graph_physical_source_delta,
+    graph_residual_source_delta,
     graph_surface_heat_source,
     node_feature_indices_from_config,
 )
@@ -520,13 +522,18 @@ def _train_one_static_sequence_epoch(
             graph = _snapshot_graph_for_tbptt(
                 feature_builder.build(node_base_cpu, global_cpu, window_temperature)
             )
+            physical_source_delta = graph_physical_source_delta(graph, model.config)
             delta_t_source = graph_explicit_source_delta(graph, model.config)
             source_temperature = apply_dirichlet_boundary(
                 window_temperature + delta_t_source,
                 static_state.boundary_nodes,
                 value=getattr(model.config, "dirichlet_temperature_star", 0.0),
             )
-            graph = clone_graph_with_temperature(graph, source_temperature, delta_t_source_star=delta_t_source)
+            graph = clone_graph_with_temperature(
+                graph,
+                source_temperature,
+                delta_t_source_star=physical_source_delta,
+            )
             delta_temperature = model(graph)
             next_temperature = apply_dirichlet_boundary(
                 source_temperature + delta_temperature,
@@ -825,13 +832,18 @@ def _run_static_training_step(
     graph = _snapshot_graph_for_tbptt(
         feature_builder.build(node_base_cpu, global_cpu, current_temperature)
     )
+    physical_source_delta = graph_physical_source_delta(graph, model.config)
     delta_t_source = graph_explicit_source_delta(graph, model.config)
     source_temperature = apply_dirichlet_boundary(
         current_temperature + delta_t_source,
         static_state.boundary_nodes,
         value=getattr(model.config, "dirichlet_temperature_star", 0.0),
     )
-    graph = clone_graph_with_temperature(graph, source_temperature, delta_t_source_star=delta_t_source)
+    graph = clone_graph_with_temperature(
+        graph,
+        source_temperature,
+        delta_t_source_star=physical_source_delta,
+    )
     delta_temperature = model(graph)
     next_temperature = apply_dirichlet_boundary(
         source_temperature + delta_temperature,
@@ -937,13 +949,18 @@ def evaluate_static_topology_sequence(
         for frame_idx in range(frame_reader.num_frames):
             node_base_cpu, global_cpu = frame_reader.read_frame(frame_idx)
             graph = feature_builder.build(node_base_cpu, global_cpu, current_temperature)
+            physical_source_delta = graph_physical_source_delta(graph, model.config)
             delta_t_source = graph_explicit_source_delta(graph, model.config)
             source_temperature = apply_dirichlet_boundary(
                 current_temperature + delta_t_source,
                 static_state.boundary_nodes,
                 value=getattr(model.config, "dirichlet_temperature_star", 0.0),
             )
-            graph = clone_graph_with_temperature(graph, source_temperature, delta_t_source_star=delta_t_source)
+            graph = clone_graph_with_temperature(
+                graph,
+                source_temperature,
+                delta_t_source_star=physical_source_delta,
+            )
             next_temperature = apply_dirichlet_boundary(
                 source_temperature + model(graph),
                 static_state.boundary_nodes,
@@ -995,6 +1012,7 @@ def _compute_loss_components(
         T_current=current_temperature,
         v_scan_star=graph.global_attr,
         q_surface_star=graph_surface_heat_source(graph),
+        delta_t_source_star=graph_residual_source_delta(graph, model.config),
         dt_star=model.config.dt_star,
         edge_index=static_state.edge_index,
         edge_attr=graph.edge_attr,
@@ -1464,13 +1482,18 @@ def rollout_static_topology(
         for frame_idx in range(int(steps)):
             node_base_cpu, global_cpu = frame_reader.read_frame(frame_idx)
             graph = feature_builder.build(node_base_cpu, global_cpu, current_temperature)
+            physical_source_delta = graph_physical_source_delta(graph, model.config)
             delta_t_source = graph_explicit_source_delta(graph, model.config)
             source_temperature = apply_dirichlet_boundary(
                 current_temperature + delta_t_source,
                 static_state.boundary_nodes,
                 value=getattr(model.config, "dirichlet_temperature_star", 0.0),
             )
-            graph = clone_graph_with_temperature(graph, source_temperature, delta_t_source_star=delta_t_source)
+            graph = clone_graph_with_temperature(
+                graph,
+                source_temperature,
+                delta_t_source_star=physical_source_delta,
+            )
             next_temperature = apply_dirichlet_boundary(
                 source_temperature + model(graph),
                 static_state.boundary_nodes,

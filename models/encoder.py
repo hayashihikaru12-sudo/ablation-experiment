@@ -86,4 +86,5 @@ def _copy_data(graph: Data) -> Data:
         新的 ``Data`` 对象，包含与输入相同的键值；张量本身保持引用语义。
     """
 
-    return Data(**{key: graph[key] for key in graph.keys})
+    keys = graph.keys() if callable(graph.keys) else graph.keys
+    return Data(**{key: graph[key] for key in keys})

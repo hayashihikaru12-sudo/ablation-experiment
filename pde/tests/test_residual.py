@@ -214,6 +214,29 @@ def test_compute_pde_residual_is_source_free_transport_only():
     assert torch.allclose(residual, expected, atol=1e-6)
 
 
+def test_compute_pde_residual_accepts_source_for_full_delta_prediction():
+    """取消显式推进时，网络预测完整源温升应满足带源 residual。"""
+
+    edge_index = torch.empty((2, 0), dtype=torch.long)
+    edge_attr = torch.empty((0, 7), dtype=torch.float32)
+    T_current = torch.zeros(3, 1)
+    delta_t_source = torch.tensor([[0.0], [0.25], [0.5]])
+
+    residual = compute_pde_residual(
+        T_next=T_current + delta_t_source,
+        T_current=T_current,
+        delta_t_source_star=delta_t_source,
+        v_scan_star=0.0,
+        dt_star=0.5,
+        edge_index=edge_index,
+        edge_attr=edge_attr,
+        inverse_pe=0.0,
+        convection_scale=1.0,
+    )
+
+    assert torch.allclose(residual, torch.zeros_like(residual), atol=1e-7)
+
+
 def test_compute_pde_residual_can_use_backward_time_scheme():
     """验证后向残差会用预测温度计算空间项和热耗散项。"""
 

@@ -70,7 +70,7 @@ HDF5 原始切片采用生成程序的原生单位：几何为 `mm`，速度为 
 
 因此训练配置中的 `datasets[].scale` 必须使用 SI：`L0` 为 `m`，`v0` 为 `m/s`，`Q0` 为表面热流标尺 `W/m^2`，`K0` 为 `W/(m·K)`，`rho` 为 `kg/m^3`，`Cp` 为 `J/(kg·K)`。`heat_source_effective_thickness` 为必填字段，单位 `m`，用于显式热源温升公式；`heat_source_absorptivity` 默认为 `1.0`。
 
-热源节点特征为可选消融项，默认关闭以兼容旧 checkpoint。开启 `include_q_in_features=true` 和 `include_delta_t_source_in_features=true` 后，节点特征布局为 `[x*, y*, z*, fx, fy, fz, T*, q*, ΔT_Q*]`。其中 `ΔT_Q* = heat_source_absorptivity * source_coefficient * dt_star * q*`，只作为 PD-GCN 输入信息；PDE residual 仍保持无源输运形式。
+热源节点特征为可选消融项，默认关闭以兼容旧 checkpoint。开启 `include_q_in_features=true` 和 `include_delta_t_source_in_features=true` 后，节点特征布局为 `[x*, y*, z*, fx, fy, fz, T*, q*, ΔT_Q*]`。其中 `ΔT_Q* = heat_source_absorptivity * source_coefficient * dt_star * q*`。默认 `use_explicit_heat_source=true` 时先显式叠加该温升，PD-GCN 只学习无源输运增量；设为 `false` 时不预加热模型输入，但仍保留 `q*`、物理 `ΔT_Q*` 和 PDE 源项，由 PD-GCN 学习包含热源贡献的完整 `ΔT*`。
 
 详细配置说明见 [configs/README.md](configs/README.md)。
 

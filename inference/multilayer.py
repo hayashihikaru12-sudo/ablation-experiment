@@ -10,7 +10,12 @@ from torch_geometric.data import Data
 from data import build_edge_features
 from data.dimensionless import temperature_from_dimensionless
 from pde import apply_dirichlet_boundary
-from training.graph_utils import graph_boundary_nodes, graph_explicit_source_delta, graph_to_device
+from training.graph_utils import (
+    graph_boundary_nodes,
+    graph_explicit_source_delta,
+    graph_physical_source_delta,
+    graph_to_device,
+)
 from training.warmup import pseudo_time_relax_initial_temperature
 
 from .fdm import compute_layer_implicit_fdm_step
@@ -111,6 +116,8 @@ def rollout_multilayer_fdm(
         for step in range(steps):
             step_start = time.perf_counter()
             graph = graph0 if step == 0 else _graph_for_step(graph_init_or_seq, step, steps, model_device)
+            physical_source_delta = torch.zeros_like(current_temperature)
+            physical_source_delta[0] = graph_physical_source_delta(graph, model.config)
             source_delta = torch.zeros_like(current_temperature)
             source_delta[0] = graph_explicit_source_delta(graph, model.config)
             source_temperature = apply_dirichlet_boundary(
@@ -125,7 +132,7 @@ def rollout_multilayer_fdm(
                         model,
                         graph,
                         source_temperature[0:1],
-                        source_delta[0:1],
+                        physical_source_delta[0:1],
                         effective_layer_batch_size=1,
                         layer_spacing_star=layer_spacing_star,
                         layer_fiber_angles_deg=layer_fiber_angles_deg,
@@ -143,7 +150,7 @@ def rollout_multilayer_fdm(
                         model,
                         graph,
                         source_temperature,
-                        source_delta,
+                        physical_source_delta,
                         effective_layer_batch_size=effective_layer_batch_size,
                         layer_spacing_star=layer_spacing_star,
                         layer_fiber_angles_deg=layer_fiber_angles_deg,

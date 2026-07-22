@@ -15,6 +15,7 @@ class TrainConfig:
     resume_optimizer_state: bool = True
     loss_threshold: Optional[float] = None
     device: Optional[str] = None
+    seed: int = 42
     lr_scheduler: str = "none"
     min_lr: float = 0.0
     lr_warmup_epochs: int = 0
@@ -72,3 +73,5 @@ class TrainConfig:
             raise ValueError(f"resume_optimizer_state must be a boolean, got {self.resume_optimizer_state!r}.")
         if self.loss_threshold is not None and float(self.loss_threshold) <= 0:
             raise ValueError(f"loss_threshold must be positive when set, got {self.loss_threshold}.")
+        if int(self.seed) < 0:
+            raise ValueError(f"seed must be non-negative, got {self.seed}.")

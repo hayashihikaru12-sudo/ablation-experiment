@@ -18,4 +18,6 @@
 
 `datasets[].scale.Q0` 表示表面热流标尺 `W/m^2`。训练入口会派生 `source_coefficient`，显式热源模块用它把 `q_surface*` 转换为顶层温升；默认节点特征不包含热源，若在 `hyperparameters.model` 中启用 `include_q_in_features` / `include_delta_t_source_in_features`，则追加 `q*` / 当前步 `ΔT_Q*` 作为 PD-GCN 输入。
 
+`hyperparameters.model.use_explicit_heat_source` 默认 `true`。设为 `false` 时不把热源温升预加到状态，但仍保留物理热源特征和带源 residual，由网络学习完整温度增量。`hyperparameters.training.seed` 固定 Python、NumPy 和 PyTorch 随机种子。
+
 `training/train_entry.py` 读取本目录配置，并通过 `training/run_config.py` 转换为训练所需的 dataclass 配置对象。

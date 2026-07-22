@@ -22,7 +22,9 @@ PD-GCN 节点输入默认兼容为：
 [x*, y*, z*, fx, fy, fz, T*]
 ```
 
-若配置 `include_q_in_features=true` 和/或 `include_delta_t_source_in_features=true`，节点特征会在 `T*` 后追加 `q*` 和/或当前步 `ΔT_Q*`。热源 `dynamic/Q` 始终按表面热流 `q''` 读取，转换为 `W/m^2` 后由显式表面热源模块计算温升；新增热源节点特征只作为 PD-GCN 输入信息，不重新进入 PDE residual 源项。
+若配置 `include_q_in_features=true` 和/或 `include_delta_t_source_in_features=true`，节点特征会在 `T*` 后追加 `q*` 和/或当前步 `ΔT_Q*`。热源 `dynamic/Q` 始终按表面热流 `q''` 读取，转换为 `W/m^2` 后计算物理源温升；默认显式推进模式下，新增特征只作为 PD-GCN 输入信息，不重复进入 PDE residual 源项。
+
+`use_explicit_heat_source=false` 用于“取消显式热源推进”消融：模型输入温度不预加 `ΔT_Q*`，但 `q*` 与物理 `ΔT_Q*` 特征保持不变，PDE residual 通过 `(T_next* - T_current* - ΔT_Q*) / dt*` 保留热源约束，使 PD-GCN 输出完整温度增量。默认 `true` 保持基线算子分裂行为。
 
 ## FEM 温度监督
 

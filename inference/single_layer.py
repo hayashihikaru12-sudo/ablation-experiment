@@ -12,7 +12,11 @@ from data import HDF5FrameReader, HDF5Loader, build_graph, build_static_cache
 from data.dimensionless import ScaleParams, temperature_from_dimensionless
 from data.static_cache import META_FILE, STATIC_FILE
 from pde import apply_dirichlet_boundary
-from training.graph_utils import clone_graph_with_temperature, graph_explicit_source_delta
+from training.graph_utils import (
+    clone_graph_with_temperature,
+    graph_explicit_source_delta,
+    graph_physical_source_delta,
+)
 from training.run_config import load_run_config, pdgcn_config_from_scale
 from training.static_topology import GpuFeatureBuilder, StaticGraphState
 from training.train_entry import derive_timing_from_hdf5, discover_hdf5_files
@@ -533,13 +537,18 @@ def rollout_single_layer_static(
             step_start = time.perf_counter()
             node_base_cpu, global_cpu = frame_reader.read_frame(frame_idx)
             graph = feature_builder.build(node_base_cpu, global_cpu, current_temperature)
+            physical_source_delta = graph_physical_source_delta(graph, model.config)
             delta_t_source = graph_explicit_source_delta(graph, model.config)
             source_temperature = apply_dirichlet_boundary(
                 current_temperature + delta_t_source,
                 static_state.boundary_nodes,
                 value=getattr(model.config, "dirichlet_temperature_star", 0.0),
             )
-            graph = clone_graph_with_temperature(graph, source_temperature, delta_t_source_star=delta_t_source)
+            graph = clone_graph_with_temperature(
+                graph,
+                source_temperature,
+                delta_t_source_star=physical_source_delta,
+            )
             next_temperature = apply_dirichlet_boundary(
                 source_temperature + model(graph),
                 static_state.boundary_nodes,

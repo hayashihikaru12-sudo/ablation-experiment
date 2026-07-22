@@ -18,6 +18,8 @@ class LRSchedulerTests(unittest.TestCase):
             TrainConfig(lr_patience=0, tbptt_window=1)
         with self.assertRaisesRegex(ValueError, "lr_factor"):
             TrainConfig(lr_factor=1.0, tbptt_window=1)
+        with self.assertRaisesRegex(ValueError, "seed"):
+            TrainConfig(seed=-1, tbptt_window=1)
 
     def test_warmup_cosine_sets_expected_epoch_lrs(self):
         parameter = torch.nn.Parameter(torch.tensor(1.0))

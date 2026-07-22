@@ -5,7 +5,13 @@ import torch
 from data.dimensionless import temperature_from_dimensionless
 from pde import apply_dirichlet_boundary
 
-from .graph_utils import clone_graph_with_temperature, graph_boundary_nodes, graph_explicit_source_delta, graph_to_device
+from .graph_utils import (
+    clone_graph_with_temperature,
+    graph_boundary_nodes,
+    graph_explicit_source_delta,
+    graph_physical_source_delta,
+    graph_to_device,
+)
 from .warmup import pseudo_time_relax_initial_temperature
 
 
@@ -34,13 +40,18 @@ def rollout(
     try:
         for step in range(int(steps)):
             graph = graphs[step]
+            physical_source_delta = graph_physical_source_delta(graph, model.config)
             delta_t_source = graph_explicit_source_delta(graph, model.config)
             source_temperature = apply_dirichlet_boundary(
                 current_temperature + delta_t_source,
                 graph_boundary_nodes(graph),
                 value=getattr(model.config, "dirichlet_temperature_star", 0.0),
             )
-            graph_step = clone_graph_with_temperature(graph, source_temperature, delta_t_source_star=delta_t_source)
+            graph_step = clone_graph_with_temperature(
+                graph,
+                source_temperature,
+                delta_t_source_star=physical_source_delta,
+            )
             delta_temperature = model(graph_step)
             next_temperature = source_temperature + delta_temperature
             next_temperature = apply_dirichlet_boundary(

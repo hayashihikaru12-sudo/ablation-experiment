@@ -85,7 +85,8 @@
       "resume_checkpoint_path": null,
       "resume_optimizer_state": false,
       "loss_threshold": null,
-      "device": null
+      "device": null,
+      "seed": 42
     }
   }
 }
